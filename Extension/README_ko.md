@@ -114,6 +114,8 @@ lua 5.1.5에 이 패치를 적용한 결과는 [여기](https://github.com/devca
 `config.connectTimeout`, `config.controllerHost`, `config.controllerPort`는 리모트 디버깅을 위한 설정입니다.  
 `config.redirectPrint` 를 `true`로 하면 `print` 호출을 가로채어 Visual Studio Code의 출력창에 표시합니다. Gideros를 사용할 때 중단점 직전에 호출한 `print`의 결과가 정상적으로 나오게 하려면 이 항목을 사용하십시오.
 
+`debuggee.start`는 두 개의 값을 리턴합니다. 첫번째 리턴값은 디버거에 정상적으로 연결했을 경우 `true`이고, 그렇지 않으면 `false`입니다. 두번째 리턴값은 현재 루아 VM에 `OP_HALT` 패치가 되어있으면 `'halt'`, 아니면 `'pure'` 입니다.
+
 ## debuggee.poll()
 쌓인 디버깅 명령을 처리하고 즉시 리턴합니다.
 
