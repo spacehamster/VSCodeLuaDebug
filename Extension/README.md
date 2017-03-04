@@ -114,7 +114,7 @@ Connect with the debugger. `jsonLib` is a JSON library containing `.encode` and 
 `Config.connectTimeout`,` config.controllerHost`, and `config.controllerPort` are settings for remote debugging.
 If `config.redirectPrint` is true, the `print` call is intercepted and displayed in the Visual Studio Code output window. Use this item if you want Gideros to print the results of a `print` called just before the breakpoint.
 
-`Debuggee.start` returns two values. The first return value is `true` if it is normally connected to the debugger, otherwise it is` false`. If the `OP_HALT` patch is applied in the current Lua VM, the second return value is `'halt'`, otherwise it is `'pure'`.
+`debuggee.start` returns two values. The first return value is `true` if it is normally connected to the debugger, otherwise it is` false`. If the `OP_HALT` patch is applied in the current Lua VM, the second return value is `'halt'`, otherwise it is `'pure'`.
 
 ## debuggee.poll()
 Processes queued debugging commands and returns immediately.
