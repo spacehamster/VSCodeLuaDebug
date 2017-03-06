@@ -1,3 +1,6 @@
+## 1.0.9
+* Added an option: env
+
 ## 1.0.8
 * Added an option: sourceBasePath
 

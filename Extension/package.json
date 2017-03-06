@@ -1,7 +1,7 @@
 {
     "name": "lua-debug",
     "displayName": "Lua Debugger",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "publisher": "devCAT",
     "icon": "images/icon.png",
     "description": "Visual Studio Code debugger extension for Lua 5.1",
@@ -45,7 +45,8 @@
                         "arguments": "main.lua",
                         "listenPublicly": false,
                         "listenPort": 56789,
-                        "encoding": "UTF-8"
+                        "encoding": "UTF-8",
+                        "env": {}
                     },
                     {
                         "name": "launch-gideros",

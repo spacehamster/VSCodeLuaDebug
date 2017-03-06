@@ -13,6 +13,8 @@ print('debuggee.start(): ', tostring(startResult), breakerType)
 
 local json = require 'dkjson'
 
+print(os.getenv('asdf'))
+
 local c = coroutine.create(function()
 	local function r(i)
 		if i > 0 then

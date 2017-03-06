@@ -11,6 +11,7 @@
             "listenPublicly": false,
             "listenPort": 56789,
             "encoding": "UTF-8"
+            "env": { "asdf": "qwer" }
         },
         {
             "name": "launch-gideros",
