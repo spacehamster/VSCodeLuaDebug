@@ -641,6 +641,9 @@ function debuggee.enterDebugLoop(depthOrCo, what)
 	if type(depthOrCo) == 'thread' then
 		baseDepth = 0
 		debugTargetCo = depthOrCo
+	elseif type(depthOrCo) == 'table' then
+		baseDepth = (depthOrCo.depth or 0)
+		debugTargetCo = depthOrCo.co
 	else
 		baseDepth = (depthOrCo or 0) + breaker.stackOffset.enterDebugLoop
 		debugTargetCo = nil
@@ -1015,4 +1018,3 @@ end
 
 -------------------------------------------------------------------------------
 return debuggee
-
