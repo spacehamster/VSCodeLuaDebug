@@ -715,29 +715,32 @@ function handlers.stackTrace(req)
 		if (info == nil) then break end
 		--print(json.encode(info))
 
-		local src = info.source
-		if string.sub(src, 1, 1) == '@' then
-			src = string.sub(src, 2) -- 앞의 '@' 떼어내기
-		end
+		-- cannot traceback into c function
+		if info.what ~= "C" then
+			local src = info.source
+			if string.sub(src, 1, 1) == '@' then
+				src = string.sub(src, 2) -- 앞의 '@' 떼어내기
+			end
 
-		local name
-		if info.name then
-			name = info.name .. ' (' .. (info.namewhat or '?') .. ')'
-		else
-			name = '?'
-		end
+			local name
+			if info.name then
+				name = info.name .. ' (' .. (info.namewhat or '?') .. ')'
+			else
+				name = '?'
+			end
 
-		local sframe = {
-			name = name,
-			source = {
-				name = nil,
-				path = Path.toAbsolute(sourceBasePath, src)
-			},
-			column = 1,
-			line = info.currentline or 1,
-			id = i,
-		}
-		stackFrames[#stackFrames + 1] = sframe
+			local sframe = {
+				name = name,
+				source = {
+					name = nil,
+					path = Path.toAbsolute(sourceBasePath, src)
+				},
+				column = 1,
+				line = info.currentline or 1,
+				id = i,
+			}
+			stackFrames[#stackFrames + 1] = sframe
+		end
 	end
 
 	sendSuccess(req, {
