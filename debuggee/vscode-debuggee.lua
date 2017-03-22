@@ -11,6 +11,7 @@ local baseDepth
 local breaker
 local sendEvent
 local dumpCommunication = false
+local ignoreFirstFrameInC = false
 local debugTargetCo = nil
 local redirectedPrintFunction = nil
 
@@ -458,6 +459,7 @@ function debuggee.start(jsonLib, config)
 	onError              = config.onError or defaultOnError
 	local redirectPrint  = config.redirectPrint or false
 	dumpCommunication    = config.dumpCommunication or false
+	ignoreFirstFrameInC  = config.ignoreFirstFrameInC or false
 	if not config.luaStyleLog then
 		valueToString = function(value) return json.encode(value) end
 	end
@@ -710,37 +712,42 @@ function handlers.stackTrace(req)
 		and (firstFrame + req.arguments.levels - 1)
 		or (9999)
 
+	-- if firstframe function of stack is C function, ignore it.
+	if ignoreFirstFrameInC then
+		local info = debug_getinfo(firstFrame, 'lnS')
+		if info and info.what == "C" then
+			firstFrame = firstFrame + 1
+		end
+	end
+
 	for i = firstFrame, lastFrame do
 		local info = debug_getinfo(i, 'lnS')
 		if (info == nil) then break end
 		--print(json.encode(info))
-
-		-- cannot traceback into c function
-		if info.what ~= "C" then
-			local src = info.source
-			if string.sub(src, 1, 1) == '@' then
-				src = string.sub(src, 2) -- 앞의 '@' 떼어내기
-			end
-
-			local name
-			if info.name then
-				name = info.name .. ' (' .. (info.namewhat or '?') .. ')'
-			else
-				name = '?'
-			end
-
-			local sframe = {
-				name = name,
-				source = {
-					name = nil,
-					path = Path.toAbsolute(sourceBasePath, src)
-				},
-				column = 1,
-				line = info.currentline or 1,
-				id = i,
-			}
-			stackFrames[#stackFrames + 1] = sframe
+		
+		local src = info.source
+		if string.sub(src, 1, 1) == '@' then
+			src = string.sub(src, 2) -- 앞의 '@' 떼어내기
 		end
+
+		local name
+		if info.name then
+			name = info.name .. ' (' .. (info.namewhat or '?') .. ')'
+		else
+			name = '?'
+		end
+
+		local sframe = {
+			name = name,
+			source = {
+				name = nil,
+				path = Path.toAbsolute(sourceBasePath, src)
+			},
+			column = 1,
+			line = info.currentline or 1,
+			id = i,
+		}
+		stackFrames[#stackFrames + 1] = sframe
 	end
 
 	sendSuccess(req, {
