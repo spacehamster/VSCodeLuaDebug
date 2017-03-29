@@ -495,9 +495,9 @@ function debuggee.start(jsonLib, config)
 	if redirectPrint then
 		redirectedPrintFunction = _G.print -- 디버거가 떨어질때를 대비해서 보관한다
 		_G.print = function(...)
-			local t = { ... }
-			for i, v in ipairs(t) do
-				t[i] = tostring(v)
+			local t = table.pack(...)
+			for i = 1, #t do
+				t[i] = tostring(t[i])
 			end
 			sendEvent(
 				'output',
