@@ -80,16 +80,13 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>copy Newtonsoft.Json.dll ..\..\..\Extension
-copy GiderosPlayerRemote.dll ..\..\..\Extension
-copy DebugAdapter.exe ..\..\..\Extension</PostBuildEvent>
-  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
+  </Target>  
   -->
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(OutputPath)\Newtonsoft.Json.dll" DestinationFolder="$(MSBuildProjectDirectory)\..\Extension" />
+    <Copy SourceFiles="$(OutputPath)\DebugAdapter.exe" DestinationFolder="$(MSBuildProjectDirectory)\..\Extension" />
+  </Target>
 </Project>
