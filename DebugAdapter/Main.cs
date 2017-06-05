@@ -25,6 +25,15 @@ namespace VSCodeDebug
             Application.Run(WaitingUI);
         }
 
+        private static ICDPSender toVSCode;
+
+        public static void Stop()
+        {
+            if (toVSCode != null) {
+                toVSCode.SendMessage(new TerminatedEvent());
+            }
+        }
+
         public static void DebugSessionLoop()
         {
             try
@@ -35,6 +44,7 @@ namespace VSCodeDebug
                 var cdp = new VSCodeDebugProtocol(debugSession);
 
                 debugSession.toVSCode = cdp;
+                toVSCode = cdp;
 
                 cdp.Loop(Console.OpenStandardInput(), Console.OpenStandardOutput());
             }

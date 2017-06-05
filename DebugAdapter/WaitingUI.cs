@@ -18,6 +18,7 @@ namespace VSCodeDebug
 
         private void WaitingUI_FormClosing(object sender, FormClosingEventArgs e)
         {
+            Program.Stop();
             Environment.Exit(0);
         }
 
