@@ -453,7 +453,11 @@ namespace VSCodeDebug
             {
                 if (fakeBreakpointMode != null) { return; }
                 this.toDebuggee = toDebuggee;
-                Program.WaitingUI.Hide();
+
+                Program.WaitingUI.BeginInvoke(new Action(() => {
+                    Program.WaitingUI.Hide();
+                }));
+                
                 var welcome = new
                 {
                     command = "welcome",
