@@ -196,6 +196,21 @@ namespace VSCodeDebug
             });
         }
 
+        public static string GetFullPath(string fileName)
+        {
+            if (File.Exists(fileName))
+                return Path.GetFullPath(fileName);
+
+            var values = Environment.GetEnvironmentVariable("PATH");
+            foreach (var path in values.Split(Path.PathSeparator))
+            {
+                var fullPath = Path.Combine(path, fileName);
+                if (File.Exists(fullPath))
+                    return fullPath;
+            }
+            return null;
+        }
+        
         void Launch(string command, int seq, dynamic args)
         {
             // 런치 전에 디버기가 접속할 수 있게 포트를 먼저 열어야 한다.
@@ -215,7 +230,8 @@ namespace VSCodeDebug
                     SendErrorResponse(command, seq, 3005, "Property 'executable' is empty.");
                     return;
                 }
-                if (!File.Exists(runtimeExecutable))
+                var runtimeExecutableFull = GetFullPath(runtimeExecutable);
+                if (runtimeExecutableFull == null)
                 {
                     SendErrorResponse(command, seq, 3006, "Runtime executable '{path}' does not exist.", new { path = runtimeExecutable });
                     return;
@@ -249,7 +265,7 @@ namespace VSCodeDebug
                 process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
                 process.StartInfo.UseShellExecute = true;
                 process.StartInfo.WorkingDirectory = workingDirectory;
-                process.StartInfo.FileName = runtimeExecutable;
+                process.StartInfo.FileName = runtimeExecutableFull;
                 process.StartInfo.Arguments = arguments;
 
                 process.EnableRaisingEvents = true;
@@ -269,7 +285,7 @@ namespace VSCodeDebug
                     }
                 }
 
-                var cmd = string.Format("{0} {1}\n", runtimeExecutable, arguments);
+                var cmd = string.Format("{0} {1}\n", runtimeExecutableFull, arguments);
                 toVSCode.SendOutput("console", cmd);
 
                 try
