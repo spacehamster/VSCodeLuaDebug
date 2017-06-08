@@ -4,6 +4,7 @@ local socket = require 'socket.core'
 local json
 local handlers = {}
 local sock
+local directorySeperator = '\\'
 local sourceBasePath = '.'
 local storedVariables = {}
 local nextVarRef = 1
@@ -150,7 +151,7 @@ function Path.concat(a, b)
 	if (lastChar == '/' or lastChar == '\\') then
 		-- pass 
 	else
-		a = a .. '\\'
+		a = a .. directorySeperator
 	end
 
 	-- b를 노멀라이즈
@@ -491,6 +492,7 @@ function debuggee.start(jsonLib, config)
 	local initMessage = recvMessage()
 	assert(initMessage and initMessage.command == 'welcome')
 	sourceBasePath = initMessage.sourceBasePath
+	directorySeperator = initMessage.directorySeperator
 
 	if redirectPrint then
 		redirectedPrintFunction = _G.print -- 디버거가 떨어질때를 대비해서 보관한다

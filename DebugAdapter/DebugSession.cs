@@ -461,7 +461,8 @@ namespace VSCodeDebug
                 var welcome = new
                 {
                     command = "welcome",
-                    sourceBasePath = sourceBasePath
+                    sourceBasePath = sourceBasePath,
+                    directorySeperator = Path.DirectorySeparatorChar,
                 };
                 toDebuggee.Send(JsonConvert.SerializeObject(welcome));
 
