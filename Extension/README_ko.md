@@ -9,7 +9,6 @@ Lua Debugger 익스텐션을 사용해서 Visual Studio Code로 Lua 프로그램
 - 디버깅 대상이 될 Lua 프로그램에서 JSON 라이브러리를 쓸 수 있어야 합니다.  
 `cjson`과 `dkjson`을 권장하지만, 인터페이스가 호환되는 다른 JSON 라이브러리를 사용해도 됩니다.
 - 여러분의 코드나 서드파티 라이브러리가 `debug.sethook`을 호출하지 않아야 합니다.
-- 현재, 디버거는 Windows에서만 작동 가능합니다.
 
 
 

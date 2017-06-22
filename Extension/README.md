@@ -11,7 +11,6 @@ You can use the Lua Debugger extension to debug Lua programs with Visual Studio 
 - You should be able to use a JSON library in a Lua program to be debugged.  
 `cjson` and` dkjson` are recommended, but you can use other JSON libraries whose interfaces are compatible.
 - Your code or third party library should not call `debug.sethook`.
-- Currently, the debugger can only work with Windows.
 
 
 

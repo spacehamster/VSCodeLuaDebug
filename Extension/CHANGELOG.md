@@ -1,3 +1,7 @@
+## 1.1.0
+* Now supports non-Windows environments. (experimental)
+* Fixed several bugs.
+
 ## 1.0.9
 * Added an option: env
 
