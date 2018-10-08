@@ -26,12 +26,14 @@ mobdebug를 써보셨다면 익숙하실 것입니다.
 
 2. 다음 코드를 모든 Lua 소스코드가 로드된 이후에 실행되도록 프로그램에 붙여넣으세요.
 여러분이 어떤 JSON 라이브러리를 사용하는지에 따라 코드를 적절히 수정해야 할 수 있습니다.
-    ```lua
+
+```lua
 local json = require 'dkjson'
 local debuggee = require 'vscode-debuggee'
 local startResult, breakerType = debuggee.start(json)
 print('debuggee start ->', startResult, breakerType)
 ```
+
 3. 디버깅할 프로그램이 있는 폴더를 Visual Studio Code에서 열고, `Ctrl-Shift-D`로 디버그 창을 열고, 디버깅 설정을 적절히 편집하세요.
 
 4. 디버깅할 프로그램의 적절한 위치에 `F9`를 눌러 중단점을 설정하세요.
