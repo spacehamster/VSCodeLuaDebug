@@ -27,12 +27,14 @@ If you have used mobdebug, you are familiar with it.
 
 2. Paste the following code into your program to run after all the Lua source code is loaded.  
 Depending on which JSON library you are using, you may need to modify your code accordingly.
-    ```lua
+
+```lua
 local json = require 'dkjson'
 local debuggee = require 'vscode-debuggee'
 local startResult, breakerType = debuggee.start(json)
 print('debuggee start ->', startResult, breakerType)
 ```
+
 3. Open the folder that contains the program you want to debug in Visual Studio Code,
 open the Debug window with `Ctrl-Shift-D`,
 and edit the debugging settings accordingly.
