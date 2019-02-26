@@ -38,6 +38,9 @@ namespace VSCodeDebug
         bool jumpToGiderosErrorPosition = false;
         bool stopGiderosWhenDebuggerStops = false;
 
+        TcpListener listener;
+        Encoding encoding;
+
         public DebugSession()
         {
             Program.WaitingUI.SetLabelText(
@@ -365,7 +368,7 @@ namespace VSCodeDebug
                 : IPAddress.Parse("127.0.0.1");
             int port = (int)args.listenPort;
 
-            TcpListener listener = new TcpListener(listenAddr, port);
+            listener = new TcpListener(listenAddr, port);
             listener.Start();
             return listener;
         }
@@ -375,7 +378,6 @@ namespace VSCodeDebug
             if (!ReadBasicConfiguration(command, seq, args)) { return; }
 
             var encodingName = (string)args.encoding;
-            Encoding encoding;
             if (encodingName != null)
             {
                 int codepage;
@@ -468,7 +470,6 @@ namespace VSCodeDebug
 
                 SendResponse(startCommand, startSeq, null);
                 toVSCode.SendMessage(new InitializedEvent());
-                startCommand = null;
             }
         }
 
@@ -487,7 +488,34 @@ namespace VSCodeDebug
             lock (this)
             {
                 if (fakeBreakpointMode != null) { return; }
-                toVSCode.SendMessage(new TerminatedEvent());
+
+                // attach 일 경우 Terminate하지 않고 재시작
+                if (startCommand == "attach")
+                {
+                    toDebuggee = null;
+
+                    Program.WaitingUI.BeginInvoke(new Action(() =>
+                    {
+                        Program.WaitingUI.Show();
+                    }));
+
+                    listener.Start();
+
+                    Program.WaitingUI.SetLabelText(
+                        "Waiting for debugee at TCP " +
+                        listener.LocalEndpoint.ToString() + "...");
+
+                    var ncom = new DebuggeeProtocol(
+                        this,
+                        listener,
+                        encoding);
+
+                    ncom.StartThread();
+                }
+                else
+                {
+                    toVSCode.SendMessage(new TerminatedEvent());
+                }
             }
         }
 
