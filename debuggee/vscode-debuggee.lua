@@ -4,7 +4,7 @@ local socket = require 'socket.core'
 local json
 local handlers = {}
 local sock
-local directorySeperator = '\\'
+local directorySeperator = package.config:sub(1,1)
 local sourceBasePath = '.'
 local storedVariables = {}
 local nextVarRef = 1
@@ -133,8 +133,7 @@ local Path = {}
 
 function Path.isAbsolute(a)
 	local firstChar = string.sub(a, 1, 1)
-	if firstChar == '/' or
-	   firstChar == '\\' then
+	if firstChar == '/' or firstChar == '\\' then
 		return true
 	end
 
@@ -145,17 +144,39 @@ function Path.isAbsolute(a)
 	return false
 end
 
+local np_pat1, np_pat2 = ('[^SEP:]+SEP%.%.SEP?'):gsub('SEP', directorySeperator), ('SEP+%.?SEP'):gsub('SEP', directorySeperator)
+function Path.normpath(path)
+	path = path:gsub('[/\\]', directorySeperator)
+
+	if directorySeperator == '\\' then
+		local unc = ('SEPSEP'):gsub('SEP', directorySeperator) -- UNC
+		if path:match('^'..unc) then
+			return unc..Path.normpath(path:sub(3))
+		end
+	end
+
+	local k
+	repeat -- /./ -> /
+		path,k = path:gsub(np_pat2, directorySeperator)
+	until k == 0
+	repeat -- A/../ -> (empty)
+		path,k = path:gsub(np_pat1, '', 1)
+	until k == 0
+	if path == '' then
+		path = '.'
+	end
+	return path
+end
+
 function Path.concat(a, b)
 	-- a를 노멀라이즈
 	local lastChar = string.sub(a, #a, #a)
-	if (lastChar == '/' or lastChar == '\\') then
-		-- pass
-	else
+	if not (lastChar == '/' or lastChar == '\\') then
 		a = a .. directorySeperator
 	end
 
 	-- b를 노멀라이즈
-	if string.match(b, '^%.%\\') then
+	if string.match(b, '^%.%\\') or string.match(b, '^%.%/') then
 		b = string.sub(b, 3)
 	end
 
@@ -164,17 +185,29 @@ end
 
 function Path.toAbsolute(base, sub)
 	if Path.isAbsolute(sub) then
-		return sub
+		return Path.normpath(sub)
 	else
-		return Path.concat(base, sub)
+		return Path.normpath(Path.concat(base, sub))
 	end
 end
 
 if DO_TEST then
 	assert(Path.isAbsolute('c:\\asdf\\afsd'))
 	assert(Path.isAbsolute('c:/asdf/afsd'))
-	assert(Path.concat('c:\\asdf', 'fdsf') == 'c:\\asdf\\fdsf')
-	assert(Path.concat('c:\\asdf', '.\\fdsf') == 'c:\\asdf\\fdsf')
+	if directorySeperator == '\\' then
+		assert(Path.toAbsolute('c:\\asdf', 'fdsf') == 'c:\\asdf\\fdsf')
+		assert(Path.toAbsolute('c:\\asdf', '.\\fdsf') == 'c:\\asdf\\fdsf')
+		assert(Path.toAbsolute('c:\\asdf', '..\\fdsf') == 'c:\\fdsf')
+		assert(Path.toAbsolute('c:\\asdf', 'c:\\fdsf') == 'c:\\fdsf')
+		assert(Path.toAbsolute('c:/asdf', '../fdsf') == 'c:\\fdsf')
+		assert(Path.toAbsolute('\\\\HOST\\asdf', '..\\fdsf') == '\\\\HOST\\fdsf')
+	elseif directorySeperator == '/' then
+		assert(Path.toAbsolute('/usr/bin/asdf', 'fdsf') == '/usr/bin/asdf/fdsf')
+		assert(Path.toAbsolute('/usr/bin/asdf', './fdsf') == '/usr/bin/asdf/fdsf')
+		assert(Path.toAbsolute('/usr/bin/asdf', '../fdsf') == '/usr/bin/fdsf')
+		assert(Path.toAbsolute('/usr/bin/asdf', '/usr/bin/fdsf') == '/usr/bin/fdsf')
+		assert(Path.toAbsolute('\\usr\\bin\\asdf', '..\\fdsf') == '/usr/bin/fdsf')
+	end
 end
 -- 패스 조작 }}}
 
