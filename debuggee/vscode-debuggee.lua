@@ -4,7 +4,7 @@ local socket = require 'socket.core'
 local json
 local handlers = {}
 local sock
-local directorySeperator = '\\'
+local directorySeperator = package.config:sub(1,1)
 local sourceBasePath = '.'
 local storedVariables = {}
 local nextVarRef = 1
@@ -17,6 +17,7 @@ local debugTargetCo = nil
 local redirectedPrintFunction = nil
 
 local onError = nil
+local addUserdataVar = nil
 
 local function defaultOnError(e)
 	print('****************************************************')
@@ -75,7 +76,7 @@ end
 local DO_TEST = false
 
 -------------------------------------------------------------------------------
--- chunkname 매칭 {{{
+-- chunkname matching {{{
 local function getMatchCount(a, b)
 	local n = math.min(#a, #b)
 	for i = 0, n - 1 do
@@ -126,15 +127,14 @@ if DO_TEST then
 	assert(#a == 1)
 	assert(a[1] == 'main.lua')
 end
--- chunkname 매칭 }}}
+-- chunkname matching }}}
 
--- 패스 조작 {{{
+-- path control {{{
 local Path = {}
 
 function Path.isAbsolute(a)
 	local firstChar = string.sub(a, 1, 1)
-	if firstChar == '/' or
-	   firstChar == '\\' then
+	if firstChar == '/' or firstChar == '\\' then
 		return true
 	end
 
@@ -145,17 +145,39 @@ function Path.isAbsolute(a)
 	return false
 end
 
+local np_pat1, np_pat2 = ('[^SEP:]+SEP%.%.SEP?'):gsub('SEP', directorySeperator), ('SEP+%.?SEP'):gsub('SEP', directorySeperator)
+function Path.normpath(path)
+	path = path:gsub('[/\\]', directorySeperator)
+
+	if directorySeperator == '\\' then
+		local unc = ('SEPSEP'):gsub('SEP', directorySeperator) -- UNC
+		if path:match('^'..unc) then
+			return unc..Path.normpath(path:sub(3))
+		end
+	end
+
+	local k
+	repeat -- /./ -> /
+		path,k = path:gsub(np_pat2, directorySeperator)
+	until k == 0
+	repeat -- A/../ -> (empty)
+		path,k = path:gsub(np_pat1, '', 1)
+	until k == 0
+	if path == '' then
+		path = '.'
+	end
+	return path
+end
+
 function Path.concat(a, b)
-	-- a를 노멀라이즈
+	-- normalize a
 	local lastChar = string.sub(a, #a, #a)
-	if (lastChar == '/' or lastChar == '\\') then
-		-- pass
-	else
+	if not (lastChar == '/' or lastChar == '\\') then
 		a = a .. directorySeperator
 	end
 
-	-- b를 노멀라이즈
-	if string.match(b, '^%.%\\') then
+	-- normalize b
+	if string.match(b, '^%.%\\') or string.match(b, '^%.%/') then
 		b = string.sub(b, 3)
 	end
 
@@ -164,25 +186,37 @@ end
 
 function Path.toAbsolute(base, sub)
 	if Path.isAbsolute(sub) then
-		return sub
+		return Path.normpath(sub)
 	else
-		return Path.concat(base, sub)
+		return Path.normpath(Path.concat(base, sub))
 	end
 end
 
 if DO_TEST then
 	assert(Path.isAbsolute('c:\\asdf\\afsd'))
 	assert(Path.isAbsolute('c:/asdf/afsd'))
-	assert(Path.concat('c:\\asdf', 'fdsf') == 'c:\\asdf\\fdsf')
-	assert(Path.concat('c:\\asdf', '.\\fdsf') == 'c:\\asdf\\fdsf')
+	if directorySeperator == '\\' then
+		assert(Path.toAbsolute('c:\\asdf', 'fdsf') == 'c:\\asdf\\fdsf')
+		assert(Path.toAbsolute('c:\\asdf', '.\\fdsf') == 'c:\\asdf\\fdsf')
+		assert(Path.toAbsolute('c:\\asdf', '..\\fdsf') == 'c:\\fdsf')
+		assert(Path.toAbsolute('c:\\asdf', 'c:\\fdsf') == 'c:\\fdsf')
+		assert(Path.toAbsolute('c:/asdf', '../fdsf') == 'c:\\fdsf')
+		assert(Path.toAbsolute('\\\\HOST\\asdf', '..\\fdsf') == '\\\\HOST\\fdsf')
+	elseif directorySeperator == '/' then
+		assert(Path.toAbsolute('/usr/bin/asdf', 'fdsf') == '/usr/bin/asdf/fdsf')
+		assert(Path.toAbsolute('/usr/bin/asdf', './fdsf') == '/usr/bin/asdf/fdsf')
+		assert(Path.toAbsolute('/usr/bin/asdf', '../fdsf') == '/usr/bin/fdsf')
+		assert(Path.toAbsolute('/usr/bin/asdf', '/usr/bin/fdsf') == '/usr/bin/fdsf')
+		assert(Path.toAbsolute('\\usr\\bin\\asdf', '..\\fdsf') == '/usr/bin/fdsf')
+	end
 end
--- 패스 조작 }}}
+-- path control }}}
 
 local coroutineSet = {}
 setmetatable(coroutineSet, { __mode = 'v' })
 
 -------------------------------------------------------------------------------
--- 네트워크 유틸리티 {{{
+-- network utility {{{
 local function sendFully(str)
 	local first = 1
 	while first <= #str do
@@ -209,9 +243,9 @@ local function logToDebugConsole(output, category)
 	sendFully('#' .. #dumpBody .. '\n' .. dumpBody)
 end
 
--- 순정 모드 {{{
+-- pure mode {{{
 local function createHaltBreaker()
-	-- chunkname 매칭 {
+	-- chunkname matching {
 	local loadedChunkNameMap = {}
 	for chunkname, _ in pairs(debug.getchunknames()) do
 		loadedChunkNameMap[chunkname] = splitChunkName(chunkname)
@@ -230,7 +264,7 @@ local function createHaltBreaker()
 		end
 		return foundChunkName
 	end
-	-- chunkname 매칭 }
+	-- chunkname matching }
 
 	local lineBreakCallback = nil
 	local function updateCoroutineHook(c)
@@ -280,7 +314,6 @@ local function createHaltBreaker()
 			updateCoroutineHook(c)
 		end,
 
-		-- 실험적으로 알아낸 값들-_-ㅅㅂ
 		stackOffset =
 		{
 			enterDebugLoop = 6,
@@ -368,7 +401,6 @@ local function createPureBreaker()
 			sethook(c, hookfunc, 'l')
 		end,
 
-		-- 실험적으로 알아낸 값들-_-ㅅㅂ
 		stackOffset =
 		{
 			enterDebugLoop = 6,
@@ -378,8 +410,7 @@ local function createPureBreaker()
 		}
 	}
 end
-
--- 순정 모드 }}}
+-- pure mode }}}
 
 
 -- 센드는 블럭이어도 됨.
@@ -409,7 +440,7 @@ local function recvMessage()
 
 	return json.decode(body)
 end
--- 네트워크 유틸리티 }}}
+-- network utility }}}
 
 -------------------------------------------------------------------------------
 local function debugLoop()
@@ -458,6 +489,7 @@ function debuggee.start(jsonLib, config)
 	local controllerHost = config.controllerHost or 'localhost'
 	local controllerPort = config.controllerPort or 56789
 	onError              = config.onError or defaultOnError
+	addUserdataVar		 = config.addUserdataVar or function() return end
 	local redirectPrint  = config.redirectPrint or false
 	dumpCommunication    = config.dumpCommunication or false
 	ignoreFirstFrameInC  = config.ignoreFirstFrameInC or false
@@ -657,7 +689,36 @@ function debuggee.enterDebugLoop(depthOrCo, what)
 end
 
 -------------------------------------------------------------------------------
--- ★★★ https://github.com/Microsoft/vscode/blob/master/src/vs/workbench/parts/debug/common/debugProtocol.d.ts
+-- Function for printing on vscode debug console
+-- First parameter 'category' can colorizes print text
+function debuggee.print(category, ...)
+	if sock == nil then
+		return false
+	end
+	local t = { ... }
+	for i = 1, #t do
+		t[i] = tostring(t[i])
+	end
+
+	local categoryVscodeConsole = 'stdout'
+	if category == 'warning' then
+		categoryVscodeConsole = 'console' -- yellow
+	elseif category == 'error' then
+		categoryVscodeConsole = 'stderr' -- red
+	elseif category == 'log' then
+		categoryVscodeConsole = 'stdout' -- white
+	end
+
+	sendEvent(
+		'output',
+		{
+			category = categoryVscodeConsole,
+			output =  table.concat(t, '\t') .. '\n'  -- Same as default "print" output end new line.
+		})
+end
+
+-------------------------------------------------------------------------------
+-- ★★★ https://github.com/Microsoft/vscode-debugadapter-node/blob/master/protocol/src/debugProtocol.ts
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -812,7 +873,8 @@ local function registerVar(varNameCount, name_, value, noQuote)
 	end
 
 	if (ty == 'table') or
-		(ty == 'function') then
+		(ty == 'function') or
+		 (ty == 'userdata') then
 		storedVariables[nextVarRef] = value
 		item.variablesReference = nextVarRef
 		nextVarRef = nextVarRef + 1
@@ -889,6 +951,8 @@ function handlers.variables(req)
 				if name == nil then break end
 				addVar(name, value)
 			end
+		elseif type(var) == 'userdata' then
+			addUserdataVar(var, addVar)
 		end
 
 		local mt = getmetatable(var)
