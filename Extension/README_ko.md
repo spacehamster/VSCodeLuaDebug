@@ -90,11 +90,10 @@ Gideros Player를 Visual Studio Code에서 직접 실행할 수 있습니다.
 
 `vscode-debuggee.lua`는 기본적으로 `debug.sethook`을 이용해서 중단점 기능을 구현했기 때문에 Lua 프로그램 실행 속도를 크게 떨어뜨립니다. 이런 성능 저하는 Lua VM에 간단한 패치를 적용함으로써 극복할 수 있습니다.
 
-lua 5.1.5를 위한 패치 파일을 [여기](https://github.com/devcat-studio/lua-5.1.5-op_halt/blob/master/op_halt.patch)에서 구할 수 있습니다.
+다운로드:
+* lua 5.1.5 : [패치](https://github.com/devcat-studio/lua-5.1.5-op_halt/blob/master/op_halt.patch), [소스코드](https://github.com/devcat-studio/lua-5.1.5-op_halt)
 
-lua 5.1.5에 이 패치를 적용한 결과는 [여기](https://github.com/devcat-studio/lua-5.1.5-op_halt)에서 다운로드할 수 있습니다.
-
-
+* lua 5.3.4 : [패치](https://github.com/devcat-studio/lua-5.3.4-op_halt/blob/master/op_halt.patch), [소스코드](https://github.com/devcat-studio/lua-5.3.4-op_halt)
 
 # 감사의 말
 
