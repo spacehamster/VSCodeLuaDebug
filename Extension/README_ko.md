@@ -125,3 +125,6 @@ Lua 프로그램의 실행을 중단하고 현재 위치에서 디버깅을 시�
 `depth`는 디버거에서 현재 실행중인 것으로 나타낼 스택의 상대적인 깊이를 지정합니다. 0으로 설정하면 `debuggee.enterDebugLoop`을 호출한 위치이며, 1로 설정하면 그보다 한 단계 얕은 위치입니다.  
 `what`은 디버깅을 시작하면서 Visual Studio Code에 전달할 메시지입니다.  
 
+## debuggee.print(category, ...)
+vscode에 콘솔 로그를 출력합니다.
+`category`로 출력할 문장의 색을 바꿀 수 있습니다. `log`, `warning`, `error` 중 하나를 선택할 수 있습니다.

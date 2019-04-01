@@ -124,3 +124,7 @@ Processes queued debugging commands and returns immediately.
 Stops running the Lua program and start debugging from the current location.  
 `depth` specifies the relative depth of the stack to indicate where the debugger is currently running. 0 means the place to call `debuggee.enterDebugLoop`, and 1 means a step shallow.  
 `what` is the message you want to pass to the Visual Studio Code as you start debugging.  
+
+## debuggee.print(category, ...)
+Prints text on vscode debug console.
+`category` colorize print text, you can choose `log`, `warning`, or `error`.

@@ -76,7 +76,7 @@ end
 local DO_TEST = false
 
 -------------------------------------------------------------------------------
--- chunkname 매칭 {{{
+-- chunkname matching {{{
 local function getMatchCount(a, b)
 	local n = math.min(#a, #b)
 	for i = 0, n - 1 do
@@ -127,9 +127,9 @@ if DO_TEST then
 	assert(#a == 1)
 	assert(a[1] == 'main.lua')
 end
--- chunkname 매칭 }}}
+-- chunkname matching }}}
 
--- 패스 조작 {{{
+-- path control {{{
 local Path = {}
 
 function Path.isAbsolute(a)
@@ -170,13 +170,13 @@ function Path.normpath(path)
 end
 
 function Path.concat(a, b)
-	-- a를 노멀라이즈
+	-- normalize a
 	local lastChar = string.sub(a, #a, #a)
 	if not (lastChar == '/' or lastChar == '\\') then
 		a = a .. directorySeperator
 	end
 
-	-- b를 노멀라이즈
+	-- normalize b
 	if string.match(b, '^%.%\\') or string.match(b, '^%.%/') then
 		b = string.sub(b, 3)
 	end
@@ -210,13 +210,13 @@ if DO_TEST then
 		assert(Path.toAbsolute('\\usr\\bin\\asdf', '..\\fdsf') == '/usr/bin/fdsf')
 	end
 end
--- 패스 조작 }}}
+-- path control }}}
 
 local coroutineSet = {}
 setmetatable(coroutineSet, { __mode = 'v' })
 
 -------------------------------------------------------------------------------
--- 네트워크 유틸리티 {{{
+-- network utility {{{
 local function sendFully(str)
 	local first = 1
 	while first <= #str do
@@ -243,9 +243,9 @@ local function logToDebugConsole(output, category)
 	sendFully('#' .. #dumpBody .. '\n' .. dumpBody)
 end
 
--- 순정 모드 {{{
+-- pure mode {{{
 local function createHaltBreaker()
-	-- chunkname 매칭 {
+	-- chunkname matching {
 	local loadedChunkNameMap = {}
 	for chunkname, _ in pairs(debug.getchunknames()) do
 		loadedChunkNameMap[chunkname] = splitChunkName(chunkname)
@@ -264,7 +264,7 @@ local function createHaltBreaker()
 		end
 		return foundChunkName
 	end
-	-- chunkname 매칭 }
+	-- chunkname matching }
 
 	local lineBreakCallback = nil
 	local function updateCoroutineHook(c)
@@ -314,7 +314,6 @@ local function createHaltBreaker()
 			updateCoroutineHook(c)
 		end,
 
-		-- 실험적으로 알아낸 값들-_-ㅅㅂ
 		stackOffset =
 		{
 			enterDebugLoop = 6,
@@ -402,7 +401,6 @@ local function createPureBreaker()
 			sethook(c, hookfunc, 'l')
 		end,
 
-		-- 실험적으로 알아낸 값들-_-ㅅㅂ
 		stackOffset =
 		{
 			enterDebugLoop = 6,
@@ -412,8 +410,7 @@ local function createPureBreaker()
 		}
 	}
 end
-
--- 순정 모드 }}}
+-- pure mode }}}
 
 
 -- 센드는 블럭이어도 됨.
@@ -443,7 +440,7 @@ local function recvMessage()
 
 	return json.decode(body)
 end
--- 네트워크 유틸리티 }}}
+-- network utility }}}
 
 -------------------------------------------------------------------------------
 local function debugLoop()
@@ -692,6 +689,8 @@ function debuggee.enterDebugLoop(depthOrCo, what)
 end
 
 -------------------------------------------------------------------------------
+-- Function for printing on vscode debug console
+-- First parameter 'category' can colorizes print text
 function debuggee.print(category, ...)
 	if sock == nil then
 		return false
@@ -701,18 +700,19 @@ function debuggee.print(category, ...)
 		t[i] = tostring(t[i])
 	end
 
+	local categoryVscodeConsole = 'stdout'
 	if category == 'warning' then
-		category = 'console' -- yellow
+		categoryVscodeConsole = 'console' -- yellow
 	elseif category == 'error' then
-		category = 'stderr'-- red
-	else
-		category = 'stdout'
+		categoryVscodeConsole = 'stderr' -- red
+	elseif category == 'log' then
+		categoryVscodeConsole = 'stdout' -- white
 	end
 
 	sendEvent(
 		'output',
 		{
-			category = category,
+			category = categoryVscodeConsole,
 			output =  table.concat(t, '\t') .. '\n'  -- Same as default "print" output end new line.
 		})
 end
