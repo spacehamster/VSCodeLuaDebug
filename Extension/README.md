@@ -92,10 +92,10 @@ This is useful if you want to see the string that the debugging target leaves on
 Basically `Vscode-debuggee.lua` drops the speed of running Lua programs because it implements the breakpoint mechanism using `debug.sethook`.  
 This performance degradation can be overcome by applying a simple patch to the Lua VM.
 
-A patch file for lua 5.1.5 is available [here](https://github.com/devcat-studio/lua-5.1.5-op_halt/blob/master/op_halt.patch).
+Download:
+* lua 5.1.5 : [Patch](https://github.com/devcat-studio/lua-5.1.5-op_halt/blob/master/op_halt.patch), [Code](https://github.com/devcat-studio/lua-5.1.5-op_halt)
 
-The result of applying this patch to lua 5.1.5 can be downloaded [here](https://github.com/devcat-studio/lua-5.1.5-op_halt).
-
+* lua 5.3.4 : [Patch](https://github.com/devcat-studio/lua-5.3.4-op_halt/blob/master/op_halt.patch), [Code](https://github.com/devcat-studio/lua-5.3.4-op_halt)
 
 
 # Acknowledgments
