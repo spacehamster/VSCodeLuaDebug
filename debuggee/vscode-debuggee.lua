@@ -17,6 +17,7 @@ local debugTargetCo = nil
 local redirectedPrintFunction = nil
 
 local onError = nil
+local addUserdataVar = nil
 
 local function defaultOnError(e)
 	print('****************************************************')
@@ -491,6 +492,7 @@ function debuggee.start(jsonLib, config)
 	local controllerHost = config.controllerHost or 'localhost'
 	local controllerPort = config.controllerPort or 56789
 	onError              = config.onError or defaultOnError
+	addUserdataVar		 = config.addUserdataVar or function() return end
 	local redirectPrint  = config.redirectPrint or false
 	dumpCommunication    = config.dumpCommunication or false
 	ignoreFirstFrameInC  = config.ignoreFirstFrameInC or false
@@ -871,7 +873,8 @@ local function registerVar(varNameCount, name_, value, noQuote)
 	end
 
 	if (ty == 'table') or
-		(ty == 'function') then
+		(ty == 'function') or
+		 (ty == 'userdata') then
 		storedVariables[nextVarRef] = value
 		item.variablesReference = nextVarRef
 		nextVarRef = nextVarRef + 1
@@ -948,6 +951,8 @@ function handlers.variables(req)
 				if name == nil then break end
 				addVar(name, value)
 			end
+		elseif type(var) == 'userdata' then
+			addUserdataVar(var, addVar)
 		end
 
 		local mt = getmetatable(var)
