@@ -657,7 +657,33 @@ function debuggee.enterDebugLoop(depthOrCo, what)
 end
 
 -------------------------------------------------------------------------------
--- ★★★ https://github.com/Microsoft/vscode/blob/master/src/vs/workbench/parts/debug/common/debugProtocol.d.ts
+function debuggee.print(category, ...)
+	if sock == nil then
+		return false
+	end
+	local t = { ... }
+	for i = 1, #t do
+		t[i] = tostring(t[i])
+	end
+
+	if category == 'warning' then
+		category = 'console' -- yellow
+	elseif category == 'error' then
+		category = 'stderr'-- red
+	else
+		category = 'stdout'
+	end
+
+	sendEvent(
+		'output',
+		{
+			category = category,
+			output =  table.concat(t, '\t') .. '\n'  -- Same as default "print" output end new line.
+		})
+end
+
+-------------------------------------------------------------------------------
+-- ★★★ https://github.com/Microsoft/vscode-debugadapter-node/blob/master/protocol/src/debugProtocol.ts
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
