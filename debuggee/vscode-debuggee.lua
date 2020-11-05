@@ -18,6 +18,7 @@ local redirectedPrintFunction = nil
 
 local onError = nil
 local addUserdataVar = nil
+local resolveChunkPath = nil
 
 local function defaultOnError(e)
 	print('****************************************************')
@@ -493,6 +494,7 @@ function debuggee.start(jsonLib, config)
 	local redirectPrint  = config.redirectPrint or false
 	dumpCommunication    = config.dumpCommunication or false
 	ignoreFirstFrameInC  = config.ignoreFirstFrameInC or false
+	resolveChunkPath     = config.resolveChunkPath or function(name) return name end
 	if not config.luaStyleLog then
 		valueToString = function(value) return json.encode(value) end
 	end
@@ -791,6 +793,8 @@ function handlers.stackTrace(req)
 		local src = info.source
 		if string.sub(src, 1, 1) == '@' then
 			src = string.sub(src, 2) -- 앞의 '@' 떼어내기
+		else
+			src = resolveChunkPath(src)
 		end
 
 		local name
