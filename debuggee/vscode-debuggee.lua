@@ -335,7 +335,9 @@ local function createPureBreaker()
 		if cached then
 			return cached
 		end
-
+		if string.sub(chunkname, 1, 1) ~= '@' then
+			chunkname = resolveChunkPath(chunkname)
+		end
 		local splitedReqPath = splitChunkName(chunkname)
 		local maxMatchCount = 0
 		local foundPath = nil
