@@ -54,16 +54,6 @@ coroutine.create = function(f)
 	return c
 end
 
-local coroutineParents = {}
-
-local coresume = coroutine.resume
-coroutine.resume = function(co, ...)
-	coroutineParents[co] = coroutine.running()
-	local result = coresume(co, ...)
-	coroutineParents[co] = nil
-	return result
-end
-
 -------------------------------------------------------------------------------
 local function debug_getinfo(depth, what)
 	if debugTargetCo then
@@ -279,7 +269,7 @@ local function createHaltBreaker()
 	local lineBreakCallback = nil
 	local function updateCoroutineHook(c)
 		if lineBreakCallback then
-			sethook(c, lineBreakCallback, 'l')
+			sethook(c, lineBreakCallback, 'crl')
 		else
 			sethook(c)
 		end
@@ -309,7 +299,7 @@ local function createHaltBreaker()
 
 		setLineBreak = function(callback)
 			if callback then
-				sethook(callback, 'l')
+				sethook(callback, 'crl')
 			else
 				sethook()
 			end
@@ -364,12 +354,16 @@ local function createPureBreaker()
 	end
 
 	local entered = false
-	local function hookfunc()
+	local function hookfunc(why)
 		if entered then return false end
 		entered = true
 
 		if lineBreakCallback then
-			lineBreakCallback()
+			lineBreakCallback(why)
+		end
+		if why ~= "line" then
+			entered = false
+			return
 		end
 
 		local info = debug_getinfo(2, 'Sl')
@@ -386,7 +380,7 @@ local function createPureBreaker()
 
 		entered = false
 	end
-	sethook(hookfunc, 'l')
+	sethook(hookfunc, 'crl')
 
 	return {
 		setBreakpoints = function(path, lines)
@@ -408,7 +402,7 @@ local function createPureBreaker()
 		end,
 
 		coroutineAdded = function(c)
-			sethook(c, hookfunc, 'l')
+			sethook(c, hookfunc, 'crl')
 		end,
 
 		stackOffset =
@@ -994,25 +988,24 @@ end
 -------------------------------------------------------------------------------
 local stepTargetHeight = nil
 local stepTargetThread = nil
-
-local function shouldBreak()
-	if stepTargetHeight == nil or stepTargetThread == nil then
-		return true
+local hasSteppedIn = false
+local function step(why)
+	if why == "call" then
+		if coroutine.running() ~= stepTargetThread then
+			hasSteppedIn = true
+		end
+		return
 	end
-	local currentThread = coroutine.running()
-	if coroutineParents[stepTargetThread] == currentThread then
-		stepTargetThread = currentThread
-		stepTargetHeight = stackHeight() - 2
-		return false
+	if why == "return" then
+		if coroutine.running() == stepTargetThread then
+			hasSteppedIn = false
+		end
+		return
 	end
-	if stackHeight() - 1 <= stepTargetHeight and currentThread == stepTargetThread then
-		return true
-	end
-	return false
-end
-
-local function step()
-	if shouldBreak() then
+	if		(stepTargetHeight == nil) or --step in
+			(stackHeight() <= stepTargetHeight and coroutine.running() == stepTargetThread) or --stepover or stepout
+			(coroutine.running() ~= stepTargetThread and hasSteppedIn == false) --stepout or stepover into parent thread
+			then
 		breaker.setLineBreak(nil)
 		baseDepth = breaker.stackOffset.stepDebugLoop
 		startDebugLoop()
@@ -1023,6 +1016,7 @@ end
 function handlers.next(req)
 	stepTargetHeight = stackHeight() - breaker.stackOffset.step
 	stepTargetThread = coroutine.running()
+	hasSteppedIn = false
 	breaker.setLineBreak(step)
 	sendSuccess(req, {})
 	return 'CONTINUE'
@@ -1032,6 +1026,7 @@ end
 function handlers.stepIn(req)
 	stepTargetHeight = nil
 	stepTargetThread = nil
+	hasSteppedIn = false
 	breaker.setLineBreak(step)
 	sendSuccess(req, {})
 	return 'CONTINUE'
@@ -1041,6 +1036,7 @@ end
 function handlers.stepOut(req)
 	stepTargetHeight = stackHeight() - (breaker.stackOffset.step + 1)
 	stepTargetThread = coroutine.running()
+	hasSteppedIn = false
 	breaker.setLineBreak(step)
 	sendSuccess(req, {})
 	return 'CONTINUE'
